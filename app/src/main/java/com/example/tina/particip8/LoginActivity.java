@@ -1,52 +1,51 @@
 package com.example.tina.particip8;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.support.v7.app.ActionBarActivity;
-import android.app.LoaderManager.LoaderCallbacks;
 
-import android.content.CursorLoader;
-import android.content.Loader;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.AsyncTask;
-
-import android.os.Build;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.text.TextUtils;
-import android.view.KeyEvent;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
+
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.squareup.okhttp.Call;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.Set;
 
 /**
  * A login screen that offers login via email/password.
  */
 public class LoginActivity extends Activity {
 
-    EditText mEmailEditText;
-    EditText mPasswordEditText;
-    Button mLoginButton;
+    private EditText mEmailEditText;
+    private EditText mPasswordEditText;
+    private Button mLoginButton;
+    private Context mContext = this;
 
+    private Particip8API mParticip8API;
+    private final String AUTHENTICATION_TOKEN_KEY = "auth_token";
+    private final String TAG = Particip8API.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+
+        //map instance properties to UI elements
         mEmailEditText = (EditText) findViewById(R.id.email);
         mPasswordEditText = (EditText) findViewById(R.id.password);
         mLoginButton = (Button) findViewById(R.id.login_button);
@@ -60,14 +59,60 @@ public class LoginActivity extends Activity {
                 String email = mEmailEditText.getText().toString();
                 String password = mPasswordEditText.getText().toString();
 
-                Toast.makeText(getApplicationContext(), "Email: " + email + ", password: " + password, Toast.LENGTH_LONG).show();
+                //create an instance of the Particip8API
+                mParticip8API = new Particip8API(LoginActivity.this);
 
-                //make request to web service to authenticate
+                //get Call request to web service to authenticate
+                Call authenticationCall = mParticip8API.getAuthenticationCall(email, password);
+
+                //if call is not null, make a call to authenticate
+                if(authenticationCall!=null){
+
+                    //make a call to authenticate user credentials
+                    authenticationCall.enqueue(new Callback(){
+
+                        //failure callback
+                        public void onFailure(Request request, IOException e){
+                            Log.d(TAG, "There was an unsuccessful request made to the api");
+                        }
+
+                        //response callback
+                        public void onResponse(Response response) throws IOException{
+
+                            if(response.isSuccessful()){
+
+                                String jsonData = response.body().string();
+                                Log.d(TAG, "JSON data from response: " + jsonData);
+
+                                try{
+                                    JSONObject authenticationData = new JSONObject(jsonData);
+                                    String authenticationToken = authenticationData.getString(AUTHENTICATION_TOKEN_KEY);
+                                    persistAuthenticationToken(authenticationToken);
+                                }catch(JSONException e){
+                                    Log.d(TAG,"JSON Exception Experienced");
+                                    e.printStackTrace();
+                                }
+
+                            }else{
+                                Log.d(TAG, "Response was not successful");
+
+                                //alert the user that their response was not successful
+                            }
+                        }
+                    });
+
+                }
             }
         });
+    }
 
-
-
+    //writes the authentication token to SharedPreferences
+    protected void persistAuthenticationToken(String authenticationToken){
+        SharedPreferences preferences = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("auth_token",authenticationToken);
+        editor.commit();
+        Log.d(TAG, "Successful write to shared preferences");
     }
 }
 

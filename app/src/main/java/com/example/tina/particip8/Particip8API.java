@@ -3,19 +3,16 @@ package com.example.tina.particip8;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.squareup.okhttp.Call;
-import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import com.squareup.okhttp.RequestBody;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 
 
 /**
@@ -25,8 +22,14 @@ public class Particip8API {
 
     private final String TAG=Particip8API.class.getSimpleName();
 
+    private static final MediaType JSON
+            = MediaType.parse("application/json; charset=utf-8");
+
     //the base url of the hosted application
-    private final String mParticip8URL="http://ec2-52-23-157-29.compute-1.amazonaws.com";
+    private final String mParticip8BaseURL="http://ec2-52-23-157-29.compute-1.amazonaws.com";
+
+    //Sessions#create
+    private final String mSessionsCreateURL = mParticip8BaseURL + "/sessions";
 
     private Context mContext;
 
@@ -48,24 +51,39 @@ public class Particip8API {
         return isAvailable;
     }
 
-
-    public Call authenticate(){
+    //builds and returns an executable call to Authenticate to the service layer
+    public Call getAuthenticationCall(String email, String password){
 
         if(isNetworkAvailable()) {
 
-            //create url for the authenticate request
-            //Structure: xxxxxx
-            String authenticationURL = mParticip8URL + "replace";
+            //instantiate postParamsJSON object
+            JSONObject postParamsJSON = new JSONObject();
 
-            Log.d(TAG,"AuthenticationURL: " + authenticationURL);
+            try{
+                //create the postParams JSON object and include fields to POST
+                postParamsJSON.put("email", email);
+                postParamsJSON.put("password", password);
 
-            //create http client
+            }catch(JSONException e){
+                e.printStackTrace();
+            }
+
+            //Convert the postParams JSON into parseable string
+            String postParams = postParamsJSON.toString();
+
+            RequestBody body = RequestBody.create(JSON, postParams);
+            Request authenticationRequest = new Request.Builder()
+                    .url(mSessionsCreateURL)
+                    .post(body)
+                    .build();
+
+            //instantiantiate new OkHttpClient
             OkHttpClient client = new OkHttpClient();
-            Request authenticationRequest= new Request.Builder().url(authenticationURL).build();
 
-            Call call=client.newCall(authenticationRequest);
+            //build a new call based on the configured request
+            Call authenticationCall = client.newCall(authenticationRequest);
 
-            return call;
+            return authenticationCall;
         }else{
             return null;
         }
