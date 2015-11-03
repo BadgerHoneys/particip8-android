@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Particip8</string>
-    
+    <string name="shared_preferences_identifier">particip8_shared_preferences</string>
+
     <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password (optional)</string>
@@ -13,4 +14,11 @@
     <string name="permission_rationale">"Contacts permissions are needed for providing email
         completions."
     </string>
+    <string name="title_activity_evaluation_creation">EvaluationCreationActivity</string>
+
+    <string name="evaluation_creation_header">Configure New Evaluation</string>
+    <string name="evaluation_name_label">Evaluation Name</string>
+    <string name="evaluation_name_hint">Enter Evaluation Name</string>
+    <string name="class_select_label">Class</string>
+    <string name="evaluation_creation_button_label">Start Evaluation</string>
 </resources>
